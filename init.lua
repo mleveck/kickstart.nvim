@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -133,10 +133,11 @@ vim.opt.signcolumn = 'yes'
 
 -- Decrease update time
 vim.opt.updatetime = 250
+vim.opt.path = vim.opt.path + '**'
 
 -- Decrease mapped sequence wait time
 -- Displays which-key popup sooner
-vim.opt.timeoutlen = 300
+--vim.opt.timeoutlen = 300
 
 -- Configure how new splits should be opened
 vim.opt.splitright = true
@@ -147,6 +148,7 @@ vim.opt.splitbelow = true
 --  and `:help 'listchars'`
 vim.opt.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.tabstop = 4
 
 -- Preview substitutions live, as you type!
 vim.opt.inccommand = 'split'
@@ -155,7 +157,7 @@ vim.opt.inccommand = 'split'
 vim.opt.cursorline = true
 
 -- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.scrolloff = 10
+vim.opt.scrolloff = 5
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -163,9 +165,14 @@ vim.opt.scrolloff = 10
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+vim.keymap.set('n', '<leader>cp', '<cmd>let @+ = expand("%")<CR>')
+vim.keymap.set('i', 'jj', '<Esc>')
+vim.keymap.set('n', '<leader>nh', '<cmd>nohlsearch<cr>', { desc = 'turn off higlighting after search' })
 
 -- Diagnostic keymaps
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>Lc', '<cmd>e ~/.config/kvim/init.lua<CR>', { desc = 'Edit kvim config' })
+vim.keymap.set('n', '<leader>Lp', '<cmd>e ~/.config/kvim/lua/custom/plugins/init.lua<CR>', { desc = 'Edit kvim custom plugins' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -227,7 +234,7 @@ vim.opt.rtp:prepend(lazypath)
 --    :Lazy update
 --
 -- NOTE: Here is where you install your plugins.
-require('lazy').setup({
+require('lazy').setup {
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
@@ -347,12 +354,14 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        defaults = {
+          file_ignore_patterns = {
+            'build/lib',
+          },
+          mappings = {
+            i = { ['<C-k>'] = 'move_selection_previous', ['<C-j>'] = 'move_selection_next' },
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -371,12 +380,27 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>sgf', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>sgs', function()
+        builtin.live_grep { fuzzy = false }
+      end, { desc = 'Grep Strict' })
+      vim.keymap.set('n', '<leader>sgd', function()
+        builtin.live_grep { glob_pattern = '**README.md' }
+      end, { desc = 'search READMEs' })
+      vim.keymap.set('n', '<leader>sgt', function()
+        builtin.live_grep { glob_pattern = '**tests/**' }
+      end, { desc = 'search READMEs' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-
+      vim.filetype.add {
+        extension = {
+          jinja = 'jinja',
+          jinja2 = 'jinja',
+          j2 = 'jinja',
+        },
+      }
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
@@ -493,8 +517,13 @@ require('lazy').setup({
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
-          map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-
+          map('<leader>dss', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+          map('<leader>dsf', function()
+            require('telescope.builtin').lsp_document_symbols { symbols = { 'function', 'method' } }
+          end, '[D]ocument [S]ymbols [F]unctions')
+          map('<leader>dsc', function()
+            require('telescope.builtin').lsp_document_symbols { symbols = { 'class' } }
+          end, '[D]ocument [S]ymbols [C]lasses')
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
           map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
@@ -506,7 +535,16 @@ require('lazy').setup({
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+          map('gl', function()
+            local float = vim.diagnostic.config().float
 
+            if float then
+              local config = type(float) == 'table' and float or {}
+              config.scope = 'line'
+
+              vim.diagnostic.open_float(config)
+            end
+          end, 'Show line diagnostics')
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
@@ -571,7 +609,35 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        pyright = {
+          settings = {
+            python = {
+              analysis = {
+                typeCheckingMode = 'off',
+              },
+            },
+          },
+        },
+        jinja_lsp = {
+          name = 'jinja-lsp',
+          cmd = { 'jinja-lsp' },
+          filetypes = { 'jinja', 'rust', 'htmldjango', 'html' },
+          init_options = {
+            templates = './templates',
+            backend = { './src' },
+            lang = 'python',
+          },
+        },
+        --pylyzer = {},
+        -- pylsp = {
+        --   settings = {
+        --     pylsp = {
+        --       plugins = {
+        --         pylsp_mypy = { enabled = true },
+        --       },
+        --     },
+        --   },
+        -- },
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -651,14 +717,15 @@ require('lazy').setup({
         -- languages here or re-enable it for the disabled ones.
         local disable_filetypes = { c = true, cpp = true }
         return {
-          timeout_ms = 500,
+          timeout_ms = 2000,
           lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
         }
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        python = { 'black', 'ruff' },
+        yaml = { 'prettier' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
@@ -701,6 +768,7 @@ require('lazy').setup({
       --  into multiple repos for maintenance purposes.
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
+      'hrsh7th/cmp-buffer',
     },
     config = function()
       -- See `:help cmp`
@@ -722,9 +790,9 @@ require('lazy').setup({
         -- No, but seriously. Please read `:help ins-completion`, it is really good!
         mapping = cmp.mapping.preset.insert {
           -- Select the [n]ext item
-          ['<C-n>'] = cmp.mapping.select_next_item(),
+          ['<C-j>'] = cmp.mapping.select_next_item(),
           -- Select the [p]revious item
-          ['<C-p>'] = cmp.mapping.select_prev_item(),
+          ['<C-k>'] = cmp.mapping.select_prev_item(),
 
           -- Scroll the documentation window [b]ack / [f]orward
           ['<C-b>'] = cmp.mapping.scroll_docs(-4),
@@ -737,9 +805,9 @@ require('lazy').setup({
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
-          --['<CR>'] = cmp.mapping.confirm { select = true },
-          --['<Tab>'] = cmp.mapping.select_next_item(),
-          --['<S-Tab>'] = cmp.mapping.select_prev_item(),
+          ['<CR>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.select_next_item(),
+          ['<S-Tab>'] = cmp.mapping.select_prev_item(),
 
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
@@ -777,11 +845,22 @@ require('lazy').setup({
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
+          { name = 'buffer' },
         },
       }
     end,
   },
-
+  {
+    'ray-x/lsp_signature.nvim',
+    event = 'VeryLazy',
+    opts = { always_trigger = false, floating_window = false },
+    config = function(_, opts)
+      require('lsp_signature').setup(opts)
+      vim.keymap.set({ 'i' }, '<C-k>', function()
+        require('lsp_signature').toggle_float_win()
+      end, { silent = true, noremap = true, desc = 'toggle signature' })
+    end,
+  },
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
@@ -870,6 +949,46 @@ require('lazy').setup({
       --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
+  {
+    'ThePrimeagen/harpoon',
+    config = function()
+      local mark = require 'harpoon.mark'
+      local ui = require 'harpoon.ui'
+      local tmux = require 'harpoon.tmux'
+
+      vim.keymap.set('n', '<leader>nn', function()
+        ui.nav_next()
+      end, { desc = 'harpoon next' })
+
+      vim.keymap.set('n', '<leader>a', mark.toggle_file)
+      vim.keymap.set('n', '<leader>nl', ui.toggle_quick_menu)
+      vim.keymap.set('n', '<leader>nt', function()
+        tmux.gotoTerminal 'main-sess:scratch.0'
+      end, { desc = 'goto tmux window 2' })
+      vim.keymap.set('n', '<leader>na', function()
+        ui.nav_file(1)
+      end)
+      vim.keymap.set('n', '<leader>ns', function()
+        ui.nav_file(2)
+      end)
+      vim.keymap.set('n', '<leader>nd', function()
+        ui.nav_file(3)
+      end)
+      vim.keymap.set('n', '<leader>nf', function()
+        ui.nav_file(4)
+      end)
+    end,
+  },
+  {
+    'AckslD/nvim-pytrize.lua',
+    ft = 'python',
+    config = function(_, opts)
+      require('pytrize').setup(opts)
+      vim.keymap.set('n', '<leader>gf', require('pytrize.api').jump_fixture, { desc = 'Jump to pytest fixture' })
+    end,
+  },
+  'sindrets/diffview.nvim',
+  'Olical/conjure',
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
@@ -880,20 +999,19 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
-}, {
+  { import = 'custom.plugins' },
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
     -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
@@ -913,7 +1031,9 @@ require('lazy').setup({
       lazy = '💤 ',
     },
   },
-})
+}
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+vim.g['conjure#mapping#doc_word'] = false
+vim.g['conjure#mapping#prefix'] = '<localleader>p'

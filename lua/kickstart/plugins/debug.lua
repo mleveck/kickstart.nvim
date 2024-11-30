@@ -23,16 +23,18 @@ return {
 
     -- Add your own debuggers here
     'leoluz/nvim-dap-go',
+    'mfussenegger/nvim-dap-python',
   },
   keys = function(_, keys)
     local dap = require 'dap'
     local dapui = require 'dapui'
+    local controls = require 'dapui.controls'
     return {
       -- Basic debugging keymaps, feel free to change to your liking!
-      { '<F5>', dap.continue, desc = 'Debug: Start/Continue' },
-      { '<F1>', dap.step_into, desc = 'Debug: Step Into' },
-      { '<F2>', dap.step_over, desc = 'Debug: Step Over' },
-      { '<F3>', dap.step_out, desc = 'Debug: Step Out' },
+      { '<leader>dc', dap.continue, desc = 'Debug: Start/Continue' },
+      { '<leader>di', dap.step_into, desc = 'Debug: Step Into' },
+      { '<leader>do', dap.step_over, desc = 'Debug: Step Over' },
+      { '<leader>du', dap.step_out, desc = 'Debug: Step Out' },
       { '<leader>b', dap.toggle_breakpoint, desc = 'Debug: Toggle Breakpoint' },
       {
         '<leader>B',
@@ -42,7 +44,7 @@ return {
         desc = 'Debug: Set Breakpoint',
       },
       -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
-      { '<F7>', dapui.toggle, desc = 'Debug: See last session result.' },
+      { '<leader>dt', dapui.toggle, desc = 'Debug: See last session result.' },
       unpack(keys),
     }
   end,
@@ -101,5 +103,17 @@ return {
         detached = vim.fn.has 'win32' == 0,
       },
     }
+    require('dap-python').setup 'python'
+    table.insert(dap.configurations.python, {
+      type = 'python',
+      request = 'launch',
+      name = 'Launch Brr',
+      program = 'brr/runner/runner.py',
+      cwd = '${workspaceFolder}',
+      args = function()
+        local args_string = vim.fn.input 'Arguments: '
+        return vim.split(args_string, ' +')
+      end,
+    })
   end,
 }
