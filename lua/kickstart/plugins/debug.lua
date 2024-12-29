@@ -33,8 +33,8 @@ return {
       -- Basic debugging keymaps, feel free to change to your liking!
       { '<leader>dc', dap.continue, desc = 'Debug: Start/Continue' },
       { '<leader>di', dap.step_into, desc = 'Debug: Step Into' },
-      { '<leader>do', dap.step_over, desc = 'Debug: Step Over' },
-      { '<leader>du', dap.step_out, desc = 'Debug: Step Out' },
+      { '<leader>dn', dap.step_over, desc = 'Debug: Step Over' },
+      { '<leader>dr', dap.step_out, desc = 'Debug: Return/Step Out' },
       { '<leader>b', dap.toggle_breakpoint, desc = 'Debug: Toggle Breakpoint' },
       {
         '<leader>B',

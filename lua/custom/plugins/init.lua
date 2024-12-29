@@ -48,19 +48,6 @@ return {
     },
   },
   {
-    'pwntester/octo.nvim',
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      'nvim-telescope/telescope.nvim',
-      'kyazdani42/nvim-web-devicons',
-    },
-    config = function()
-      require('octo').setup {
-        default_to_projects_v2 = true,
-      }
-    end,
-  },
-  {
     'ruifm/gitlinker.nvim',
     event = 'BufRead',
     config = function()
@@ -85,17 +72,5 @@ return {
       )
     end,
     dependencies = 'nvim-lua/plenary.nvim',
-  },
-  {
-    'pwntester/octo.nvim',
-    requires = {
-      'nvim-lua/plenary.nvim',
-      'nvim-telescope/telescope.nvim',
-      -- OR 'ibhagwan/fzf-lua',
-      'nvim-tree/nvim-web-devicons',
-    },
-    config = function()
-      require('octo').setup { default_to_projects_v2 = true }
-    end,
   },
 }

@@ -327,6 +327,7 @@ require('lazy').setup {
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+      'girishji/pythondoc.vim',
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -354,17 +355,19 @@ require('lazy').setup {
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        defaults = {
+        defaults = require('telescope.themes').get_ivy {
           file_ignore_patterns = {
             'build/lib',
           },
           mappings = {
             i = { ['<C-k>'] = 'move_selection_previous', ['<C-j>'] = 'move_selection_next' },
           },
+          theme = 'ivy',
         },
+        --defaults = {
         extensions = {
           ['ui-select'] = {
-            require('telescope.themes').get_dropdown(),
+            require('telescope.themes').get_ivy(),
           },
         },
       }
@@ -404,7 +407,7 @@ require('lazy').setup {
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
+        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_ivy {
           winblend = 10,
           previewer = false,
         })
@@ -535,6 +538,8 @@ require('lazy').setup {
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+          vim.keymap.set('i', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>', {desc = 'LSP: Signature Help' })
+
           map('gl', function()
             local float = vim.diagnostic.config().float
 
@@ -711,16 +716,16 @@ require('lazy').setup {
     },
     opts = {
       notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        return {
-          timeout_ms = 2000,
-          lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
-        }
-      end,
+      -- format_on_save = function(bufnr)
+      --   -- Disable "format_on_save lsp_fallback" for languages that don't
+      --   -- have a well standardized coding style. You can add additional
+      --   -- languages here or re-enable it for the disabled ones.
+      --   local disable_filetypes = { c = true, cpp = true, python = true }
+      --   return {
+      --     timeout_ms = 2000,
+      --     lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
+      --   }
+      -- end,
       formatters_by_ft = {
         lua = { 'stylua' },
         python = { 'black', 'ruff' },
@@ -783,7 +788,6 @@ require('lazy').setup {
           end,
         },
         completion = { completeopt = 'menu,menuone,noinsert' },
-
         -- For an understanding of why these mappings were
         -- chosen, you will need to read `:help ins-completion`
         --
@@ -832,7 +836,17 @@ require('lazy').setup {
               luasnip.jump(-1)
             end
           end, { 'i', 's' }),
-
+          ['<C-q>'] = cmp.mapping {
+            i = function()
+              if cmp.visible() then
+                cmp.abort()
+                require('others').toggle_completion()
+              else
+                cmp.complete()
+                require('others').toggle_completion()
+              end
+            end,
+          },
           -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
           --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
         },
@@ -848,17 +862,6 @@ require('lazy').setup {
           { name = 'buffer' },
         },
       }
-    end,
-  },
-  {
-    'ray-x/lsp_signature.nvim',
-    event = 'VeryLazy',
-    opts = { always_trigger = false, floating_window = false },
-    config = function(_, opts)
-      require('lsp_signature').setup(opts)
-      vim.keymap.set({ 'i' }, '<C-k>', function()
-        require('lsp_signature').toggle_float_win()
-      end, { silent = true, noremap = true, desc = 'toggle signature' })
     end,
   },
   { -- You can easily change to a different colorscheme.
@@ -878,6 +881,38 @@ require('lazy').setup {
       vim.cmd.hi 'Comment gui=none'
     end,
   },
+
+  {
+    'p00f/alabaster.nvim',
+    config = function()
+      vim.cmd.colorscheme 'alabaster'
+    end,
+  },
+  --{
+  --  'Lokaltog/monotone.nvim',
+  --  dependencies = {
+  --    'rktjmp/lush.nvim',
+  --  },
+  --  config = function()
+  --    vim.cmd.colorscheme 'monotone'
+  --  end,
+  --},
+  { 'He4eT/desolate.nvim', dependencies = {
+    'rktjmp/lush.nvim',
+  } },
+  --{
+  --  'pbrisbin/vim-colors-off',
+  --  config = function()
+  --    vim.cmd.colorscheme 'off'
+  --  end,
+  --},
+  --  {
+  --  'f4z3r/gruvbox-material.nvim',
+  --  name = 'gruvbox-material',
+  --  lazy = false,
+  --  priority = 1000,
+  --  opts = {},
+  --},
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
@@ -1037,3 +1072,19 @@ require('lazy').setup {
 -- vim: ts=2 sts=2 sw=2 et
 vim.g['conjure#mapping#doc_word'] = false
 vim.g['conjure#mapping#prefix'] = '<localleader>p'
+require('cmp').setup {
+  enabled = function()
+    require 'others'
+    local normal_buftype = function()
+      return vim.api.nvim_buf_get_option(0, 'buftype') ~= 'prompt'
+    end
+    if vim.g.cmp_toggle_flag then
+      return normal_buftype()
+    else
+      return false
+    end
+  end,
+}
+vim.keymap.set('i', '<C-q>', function()
+  require('others').toggle_completion()
+end)
