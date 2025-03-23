@@ -234,6 +234,7 @@ vim.opt.rtp:prepend(lazypath)
 --    :Lazy update
 --
 -- NOTE: Here is where you install your plugins.
+---@diagnostic disable-next-line: missing-fields
 require('lazy').setup {
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
@@ -360,11 +361,18 @@ require('lazy').setup {
             'build/lib',
           },
           mappings = {
-            i = { ['<C-k>'] = 'move_selection_previous', ['<C-j>'] = 'move_selection_next' },
+            i = {
+              ['<C-k>'] = 'move_selection_previous',
+              ['<C-j>'] = 'move_selection_next',
+              ['<C-U>'] = 'results_scrolling_up',
+              ['<C-D>'] = 'results_scrolling_down',
+              ['<C-F>'] = 'preview_scrolling_down',
+              ['<C-B>'] = 'preview_scrolling_up',
+              ['<C-H>'] = require('telescope.actions.layout').toggle_preview,
+            },
           },
           theme = 'ivy',
         },
-        --defaults = {
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_ivy(),
@@ -389,10 +397,10 @@ require('lazy').setup {
       end, { desc = 'Grep Strict' })
       vim.keymap.set('n', '<leader>sgd', function()
         builtin.live_grep { glob_pattern = '**README.md' }
-      end, { desc = 'search READMEs' })
+      end, { desc = 'grep READMEs' })
       vim.keymap.set('n', '<leader>sgt', function()
         builtin.live_grep { glob_pattern = '**tests/**' }
-      end, { desc = 'search READMEs' })
+      end, { desc = 'grep tests' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -538,7 +546,7 @@ require('lazy').setup {
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
-          vim.keymap.set('i', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>', {desc = 'LSP: Signature Help' })
+          vim.keymap.set('i', '<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<CR>', { desc = 'LSP: Signature Help' })
 
           map('gl', function()
             local float = vim.diagnostic.config().float
@@ -560,28 +568,28 @@ require('lazy').setup {
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
-            local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-            vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-              buffer = event.buf,
-              group = highlight_augroup,
-              callback = vim.lsp.buf.document_highlight,
-            })
+          -- if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
+          --   local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
+          --   vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+          --     buffer = event.buf,
+          --     group = highlight_augroup,
+          --     callback = vim.lsp.buf.document_highlight,
+          --   })
 
-            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-              buffer = event.buf,
-              group = highlight_augroup,
-              callback = vim.lsp.buf.clear_references,
-            })
+          --   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+          --     buffer = event.buf,
+          --     group = highlight_augroup,
+          --     callback = vim.lsp.buf.clear_references,
+          --   })
 
-            vim.api.nvim_create_autocmd('LspDetach', {
-              group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
-              callback = function(event2)
-                vim.lsp.buf.clear_references()
-                vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
-              end,
-            })
-          end
+          --   vim.api.nvim_create_autocmd('LspDetach', {
+          --     group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
+          --     callback = function(event2)
+          --       vim.lsp.buf.clear_references()
+          --       vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
+          --     end,
+          --   })
+          -- end
 
           -- The following code creates a keymap to toggle inlay hints in your
           -- code, if the language server you are using supports them
@@ -591,6 +599,10 @@ require('lazy').setup {
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
+          end
+          -- turn off SemanticTokensProvider in order to stop it from messing with theme syntax highlighting
+          if client then
+            client.server_capabilities.semanticTokensProvider = nil
           end
         end,
       })
@@ -614,9 +626,13 @@ require('lazy').setup {
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        pyright = {
+        basedpyright = {
+          -- root_dir = function()
+          --   return vim.fn.getcwd()
+          -- end,
           settings = {
-            python = {
+            basedpyright = {
+              semanticHighlighting = false,
               analysis = {
                 typeCheckingMode = 'off',
               },
@@ -728,7 +744,7 @@ require('lazy').setup {
       -- end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        python = { 'black', 'ruff' },
+        python = {'ruff' },
         yaml = { 'prettier' },
         -- Conform can also run multiple formatters sequentially
         --
@@ -1024,7 +1040,19 @@ require('lazy').setup {
   },
   'sindrets/diffview.nvim',
   'Olical/conjure',
-
+  {
+    'folke/zen-mode.nvim',
+    config = function()
+      vim.keymap.set('n', '<leader>wo', '<cmd>ZenMode<cr>', { desc = 'Toggle Zenmode' })
+    end,
+  },
+  {
+    'psliwka/vim-dirtytalk',
+    build = ':DirtytalkUpdate',
+    config = function()
+      vim.opt.spelllang = { 'en', 'programming' }
+    end,
+  },
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.

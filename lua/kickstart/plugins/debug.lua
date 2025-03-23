@@ -71,11 +71,13 @@ return {
 
     -- Dap UI setup
     -- For more information, see |:help nvim-dap-ui|
+    ---@diagnostic disable-next-line: missing-fields
     dapui.setup {
       -- Set icons to characters that are more likely to work in every terminal.
       --    Feel free to remove or use ones that you like more! :)
       --    Don't feel like these are good choices.
       icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
+      ---@diagnostic disable-next-line: missing-fields
       controls = {
         icons = {
           pause = '⏸',
@@ -109,6 +111,19 @@ return {
       request = 'launch',
       name = 'Launch Brr',
       program = 'brr/runner/runner.py',
+      cwd = '${workspaceFolder}',
+      args = function()
+        local args_string = vim.fn.input 'Arguments: '
+        return vim.split(args_string, ' +')
+      end,
+    })
+
+    table.insert(dap.configurations.python, {
+      type = 'python',
+      request = 'launch',
+      name = 'Train LLM',
+      program = 'llm/apps/scoring/predictive_scoring/entrypoints/train/cli.py',
+      env = { BR_PERSON = 'matt.leveck@openlabsusa.org' },
       cwd = '${workspaceFolder}',
       args = function()
         local args_string = vim.fn.input 'Arguments: '
