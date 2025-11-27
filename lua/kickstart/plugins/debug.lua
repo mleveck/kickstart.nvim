@@ -28,7 +28,6 @@ return {
   keys = function(_, keys)
     local dap = require 'dap'
     local dapui = require 'dapui'
-    local controls = require 'dapui.controls'
     return {
       -- Basic debugging keymaps, feel free to change to your liking!
       { '<leader>dc', dap.continue, desc = 'Debug: Start/Continue' },

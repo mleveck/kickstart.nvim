@@ -63,6 +63,9 @@ return {
           -- mapping to call url generation
           mappings = '<leader>gy',
         },
+        -- callbacks = {
+        --   ['github-mleveck'] = function() require('gitlinker.hosts').get_github_type_url({host ='github.com'}) end,
+        -- },
       }
       vim.api.nvim_set_keymap(
         'n',
