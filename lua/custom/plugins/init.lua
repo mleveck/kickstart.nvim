@@ -48,32 +48,20 @@ return {
     },
   },
   {
-    'ruifm/gitlinker.nvim',
-    event = 'BufRead',
+    'linrongbin16/gitlinker.nvim',
+    cmd = 'GitLink',
+    keys = {
+      { '<leader>gy', '<cmd>GitLink<cr>', mode = { 'n', 'v' }, desc = 'Yank git link' },
+      { '<leader>gY', '<cmd>GitLink!<cr>', mode = { 'n', 'v' }, desc = 'Open git link' },
+      { '<leader>gb', '<cmd>GitLink blame<cr>', mode = { 'n', 'v' }, desc = 'Yank git blame link' },
+      { '<leader>gB', '<cmd>GitLink! blame<cr>', mode = { 'n', 'v' }, desc = 'Open git blame link' },
+      { '<leader>gd', '<cmd>GitLink default_branch<cr>', mode = { 'n', 'v' }, desc = 'Yank default branch link' },
+    },
     config = function()
       require('gitlinker').setup {
-        opts = {
-          -- remote = 'github', -- force the use of a specific remote
-          -- adds current line nr in the url for normal mode
-          add_current_line_on_normal_mode = true,
-          -- callback for what to do with the url
-          action_callback = require('gitlinker.actions').copy_to_clipboard,
-          -- print the url after performing the action
-          print_url = true,
-          -- mapping to call url generation
-          mappings = '<leader>gy',
-        },
-        -- callbacks = {
-        --   ['github-mleveck'] = function() require('gitlinker.hosts').get_github_type_url({host ='github.com'}) end,
-        -- },
+        message = true,
+        highlight_duration = 300,
       }
-      vim.api.nvim_set_keymap(
-        'n',
-        '<leader>gb',
-        '<cmd>lua require"gitlinker".get_buf_range_url("n", {action_callback = require"gitlinker.actions".open_in_browser})<cr>',
-        { silent = true }
-      )
     end,
-    dependencies = 'nvim-lua/plenary.nvim',
   },
 }

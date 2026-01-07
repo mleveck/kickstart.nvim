@@ -149,6 +149,8 @@ vim.opt.splitbelow = true
 vim.opt.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.opt.tabstop = 4
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
 
 -- Preview substitutions live, as you type!
 vim.opt.inccommand = 'split'
@@ -182,16 +184,6 @@ vim.keymap.set('n', '<leader>Lp', '<cmd>e ~/.config/kvim/lua/custom/plugins/init
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
-
--- Keybinds to make split navigation easier.
---  Use CTRL+<hjkl> to switch between windows
---
---  See `:help wincmd` for a list of all window commands
 vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
@@ -308,7 +300,7 @@ require('lazy').setup {
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
-    branch = '0.1.x',
+    tag = 'v0.2.0',
     dependencies = {
       'nvim-lua/plenary.nvim',
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
@@ -505,8 +497,10 @@ require('lazy').setup {
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
-      { 'williamboman/mason.nvim', tag = 'v1.11.0', config = true }, -- NOTE: Must be loaded before dependants
-      { 'williamboman/mason-lspconfig.nvim', tag = 'v1.32.0' },
+      -- { 'williamboman/mason.nvim', tag = 'v1.11.0', config = true }, -- NOTE: Must be loaded before dependants
+      { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+      -- { 'williamboman/mason-lspconfig.nvim', tag = 'v1.32.0' },
+      { 'williamboman/mason-lspconfig.nvim' },
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
       -- Useful status updates for LSP.
@@ -514,8 +508,7 @@ require('lazy').setup {
       { 'j-hui/fidget.nvim', opts = {} },
 
       -- Allows extra capabilities provided by nvim-cmp
-      {'hrsh7th/cmp-nvim-lsp',
-      commit = "a8912b8" },
+      { 'hrsh7th/cmp-nvim-lsp', commit = 'a8912b8' },
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -682,16 +675,6 @@ require('lazy').setup {
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        basedpyright = {
-          settings = {
-            basedpyright = {
-              semanticHighlighting = false,
-              analysis = {
-                typeCheckingMode = 'off',
-              },
-            },
-          },
-        },
         lua_ls = {
           settings = {
             Lua = {
@@ -732,6 +715,22 @@ require('lazy').setup {
           end,
         },
       }
+
+      -- Configure basedpyright using vim.lsp.config to override defaults
+      local lspconfig_util = require 'lspconfig.util'
+      vim.lsp.config('basedpyright', {
+        cmd = { 'basedpyright-langserver', '--stdio' },
+        filetypes = { 'python' },
+        capabilities = capabilities,
+        settings = {
+          basedpyright = {
+            analysis = {
+              typeCheckingMode = 'off',
+            },
+          },
+        },
+      })
+      vim.lsp.enable('basedpyright')
     end,
   },
 
@@ -763,7 +762,8 @@ require('lazy').setup {
       -- end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        python = { 'ruff' },
+        --python = { 'ruff' },
+        bash = { 'bashls' },
         yaml = { 'prettier' },
         markdown = { 'prettier' },
         -- Conform can also run multiple formatters sequentially
@@ -939,9 +939,6 @@ require('lazy').setup {
     --     vim.cmd.colorscheme('zenbones')
     -- end
   },
-  {
-    'T3rmn/Ghostty_dark_nvim',
-  },
   --{
   --  'Lokaltog/monotone.nvim',
   --  dependencies = {
@@ -1012,83 +1009,46 @@ require('lazy').setup {
     build = ':TSUpdate',
     opts = {
       ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python' },
-      -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
         enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
       incremental_selection = {
         enable = true,
         keymaps = {
-          init_selection = false, -- set to `false` to disable one of the mappings
+          init_selection = false,
           node_incremental = false,
-          scope_incremental = false,
           node_decremental = false,
+          scope_incremental = false,
         },
       },
       textobjects = {
         select = {
           enable = true,
-
-          -- Automatically jump forward to textobj, similar to targets.vim
           lookahead = true,
-
           keymaps = {
-            -- You can use the capture groups defined in textobjects.scm
             ['af'] = '@function.outer',
             ['if'] = '@function.inner',
             ['ab'] = '@block.outer',
             ['ib'] = '@block.inner',
             ['ac'] = '@class.outer',
-            -- You can optionally set descriptions to the mappings (used in the desc parameter of
-            -- nvim_buf_set_keymap) which plugins like which-key display
             ['ic'] = { query = '@class.inner', desc = 'Select inner part of a class region' },
-            -- You can also use captures from other query groups like `locals.scm`
             ['as'] = { query = '@local.scope', query_group = 'locals', desc = 'Select language scope' },
             ['is'] = { query = '@local.scope', query_group = 'locals', desc = 'Select language scope' },
           },
-          -- You can choose the select mode (default is charwise 'v')
-          --
-          -- Can also be a function which gets passed a table with the keys
-          -- * query_string: eg '@function.inner'
-          -- * method: eg 'v' or 'o'
-          -- and should return the mode ('v', 'V', or '<c-v>') or a table
-          -- mapping query_strings to modes.
           selection_modes = {
-            ['@parameter.outer'] = 'v', -- charwise
-            ['@function.outer'] = 'V', -- linewise
-            ['@class.outer'] = '<c-v>', -- blockwise
+            ['@parameter.outer'] = 'v',
+            ['@function.outer'] = 'V',
+            ['@class.outer'] = '<c-v>',
           },
-          -- If you set this to `true` (default is `false`) then any textobject is
-          -- extended to include preceding or succeeding whitespace. Succeeding
-          -- whitespace has priority in order to act similarly to eg the built-in
-          -- `ap`.
-          --
-          -- Can also be a function which gets passed a table with the keys
-          -- * query_string: eg '@function.inner'
-          -- * selection_mode: eg 'v'
-          -- and should return true or false
-          --include_surrounding_whitespace = true,
         },
       },
     },
     config = function(_, opts)
-      -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-
-      ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup(opts)
 
-      -- There are additional nvim-treesitter modules that you can use to interact
-      -- with nvim-treesitter. You should go explore a few and see what interests you:
-      --
-      --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-      --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-      --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
       local treesitter_selection_active = false
 
       local function init_selection_with_cursor_at_start()
@@ -1117,7 +1077,6 @@ require('lazy').setup {
         end
       end
 
-      -- Reset the flag when leaving visual mode
       vim.api.nvim_create_autocmd('ModeChanged', {
         pattern = '[vV\22]:*',
         callback = function()
@@ -1125,7 +1084,6 @@ require('lazy').setup {
         end,
       })
 
-      -- Set up the keymaps
       vim.keymap.set('n', '<leader>ss', init_selection_with_cursor_at_start, { desc = 'Init selection (cursor at start)' })
       vim.keymap.set('v', ';', smart_semicolon, { desc = 'Node incremental or repeat motion' })
       vim.keymap.set('v', ',', smart_comma, { desc = 'Node decremental or repeat motion' })
@@ -1165,7 +1123,7 @@ require('lazy').setup {
     end,
   },
   'sindrets/diffview.nvim',
-  'Olical/conjure',
+  { 'Olical/conjure', branch = 'main' },
   {
     'folke/zen-mode.nvim',
     config = function()
@@ -1191,7 +1149,7 @@ require('lazy').setup {
     'GCBallesteros/jupytext.nvim',
     config = true,
     -- Depending on your nvim distro or config you may need to make the loading not lazy
-    lazy=false,
+    lazy = false,
   },
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
@@ -1273,7 +1231,7 @@ python_includeexpr = function()
 end
 
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'markdown', 'text'},
+  pattern = { 'markdown', 'text' },
   callback = function()
     vim.bo.includeexpr = 'v:lua.python_includeexpr()'
   end,
